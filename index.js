@@ -2,9 +2,10 @@ const express = require('express');
 const axios = require('axios'); // ← LINEへ返信するために必要
 const app = express();
 const port = process.env.PORT || 3000;
+const LINE_ACCESS_TOKEN = process.env.LINE_ACCESS_TOKEN;
 
-// LINEのチャネルアクセストークン（後で環境変数に移す）
-const LINE_ACCESS_TOKEN = 'ここにチャネルアクセストークン';
+// これを追加（先頭付近、expressの下くらい）
+require('dotenv').config();
 
 app.use(express.json());
 
