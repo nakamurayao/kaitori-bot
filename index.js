@@ -1,20 +1,53 @@
 const express = require('express');
+const axios = require('axios'); // ← LINEへ返信するために必要
 const app = express();
 const port = process.env.PORT || 3000;
 
-// LINE Webhook からの POST を受け取るための設定
+// LINEのチャネルアクセストークン（後で環境変数に移す）
+const LINE_ACCESS_TOKEN = 'ここにチャネルアクセストークン';
+
 app.use(express.json());
 
-app.post('/webhook', (req, res) => {
-  console.log('📩 Webhook受信:', req.body);
-  res.sendStatus(200); // LINE に 200 OK を返す
+app.post('/webhook', async (req, res) => {
+  const events = req.body.events;
+
+  // 複数イベントが来る可能性があるので forEach
+  events.forEach(async (event) => {
+    if (event.type === 'message' && event.message.type === 'text') {
+      const replyToken = event.replyToken;
+      const userMessage = event.message.text;
+
+      const replyMessage = {
+        replyToken: replyToken,
+        messages: [
+          {
+            type: 'text',
+            text: `「${userMessage}」ですね！メッセージありがとうございます😊`
+          }
+        ]
+      };
+
+      // LINE Messaging API にPOST
+      try {
+        await axios.post('https://api.line.me/v2/bot/message/reply', replyMessage, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${LINE_ACCESS_TOKEN}`
+          }
+        });
+      } catch (error) {
+        console.error('LINE返信エラー:', error.response?.data || error.message);
+      }
+    }
+  });
+
+  res.sendStatus(200); // LINEに「受け取ったよ」と返す
 });
 
-// 動作確認用（GETでもアクセスできるように）
 app.get('/', (req, res) => {
   res.send('LINE査定Botサーバー稼働中！🚀');
 });
+
 app.listen(port, () => {
-    console.log(`✅ サーバー起動！ポート番号: ${port}`);
-  });
-  
+  console.log(`✅ サーバー起動！ポート番号: ${port}`);
+});
